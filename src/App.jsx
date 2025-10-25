@@ -14,6 +14,22 @@ import Box from "./component/Box";
 function App() {
   const [weatherData, setWeatherData] = useState(null);  
   const [loading, setLoading] = useState(true);
+  const [city, setCity] = useState("current");
+
+  // 도시 목록
+  const cityButtons = [
+    { key: 'current', name: '현재 위치' },
+    { key: 'New York', name: '뉴욕' },
+    { key: 'London', name: '런던' },
+    { key: 'Paris', name: '파리' },
+    { key: 'Naples', name: '나폴리' },
+  ];
+
+  // 다른도시 날씨 가져오는 함수
+  const getWeatherByCity = async (cityName)=>{
+    let url = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=ebe3945518c1f47f05ca8611f7f1c729&units=metric`
+    await fetchWeather(url);
+  }
 
   const getCurrentLocation = ()=>{
     navigator.geolocation.getCurrentPosition((position)=>{
@@ -23,55 +39,71 @@ function App() {
     },
     (error) => {
         console.error("위치 정보 접근 거부 또는 오류:", error);
-        setLoading(false); // 위치 정보 실패 시에도 로딩 종료
+        getWeatherByCity("Seoul"); 
+        setCity("Seoul");
     }
-  )};
+  )};  
+
+  // 도시 버튼 함수
+  const handleCityChange = (cityName) => {
+    setCity(cityName); 
+    if (cityName === 'current') {
+      getCurrentLocation(); 
+    } else {
+      getWeatherByCity(cityName); 
+    }
+  };
+
+  const fetchWeather = async (url) => {
+    try {
+      setLoading(true);
+      let response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      let data = await response.json();
+      setWeatherData(data);
+    } catch (error) {
+      console.error("날씨 정보 가져오기 오류:", error.message);
+      setWeatherData(null); 
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const getWeatherByCurrentLocation = async (lat, lon)=>{
     let url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=ebe3945518c1f47f05ca8611f7f1c729&units=metric`
-    
-    try {
-      setLoading(true);
-      
-      let response = await fetch(url);
-      let data = await response.json();      
-      setWeatherData(data);
-    } catch (error) {
-      console.error("날씨 정보 가져오기 오류:", error.message);      
-    } finally {      
-      setLoading(false); 
-    }    
-  }
+    await fetchWeather(url);    
+  } 
 
   useEffect(()=>{
-    getCurrentLocation();    
+    getCurrentLocation();
   },[])
 
   if (loading) {  
-    return <div>날씨 정보를 불러오는 중입니다... 🔄</div>;
+    return (
+      <div className="loading-spinner">
+        <div className="spinner"></div> 
+        <div>날씨 정보를 불러오는 중입니다...</div>
+      </div>
+    );
   }  
   if (!weatherData) {
     return <div>날씨 정보를 불러오지 못했습니다. 콘솔을 확인하세요.</div>;
   }
   
-  const cityButtons = [
-    { key: 'current', name: '현재 위치' },
-    { key: 'newYork', name: '뉴욕' },
-    { key: 'london', name: '런던' },
-    { key: 'paris', name: '파리' },
-    { key: 'naples', name: '나폴리' },
-  ];
 
   return (
     <>
       <div className="weather-app">
         <Box weather={weatherData} />
-        <div className="city-selector-container">
-            {cityButtons.map((city) => (
-              <button key={city.key} className={`city-button`}>
-                {city.name}
-              </button>
-            ))}
+
+        <div className="city-selector-container">         
+          {cityButtons.map((city) => (
+            <button key={city.key} className={`city-button ${city.key}`} onClick={()=>{handleCityChange(city.key)}}>
+              {city.name}
+            </button>
+          ))}
         </div>
       </div>      
     </>
