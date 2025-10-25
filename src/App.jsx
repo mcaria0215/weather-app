@@ -99,9 +99,9 @@ function App() {
         <Box weather={weatherData} />
 
         <div className="city-selector-container">         
-          {cityButtons.map((city) => (
-            <button key={city.key} className={`city-button ${city.key}`} onClick={()=>{handleCityChange(city.key)}}>
-              {city.name}
+          {cityButtons.map((cityObj) => (
+            <button key={cityObj.key} className={`city-button ${cityObj.key===city?'active':''}`} onClick={()=>{handleCityChange(cityObj.key)}}>
+              {cityObj.name}
             </button>
           ))}
         </div>
